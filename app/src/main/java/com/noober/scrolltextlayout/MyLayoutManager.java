@@ -1,8 +1,9 @@
 package com.noober.scrolltextlayout;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.PointF;
-import android.graphics.Rect;
+import android.graphics.RectF;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearSmoothScroller;
 import android.support.v7.widget.RecyclerView;
@@ -19,14 +20,14 @@ import android.widget.TextView;
 public class MyLayoutManager extends RecyclerView.LayoutManager implements RecyclerView.SmoothScroller.ScrollVectorProvider {
 
     //保存所有的Item的上下左右的偏移量信息
-    private SparseArray<Rect> allItemFrames = new SparseArray<>();
+    private SparseArray<RectF> allItemFrames = new SparseArray<>();
     //记录Item是否出现过屏幕且还没有回收。true表示出现过屏幕上，并且还没被回收
     private SparseBooleanArray hasAttachedItems = new SparseBooleanArray();
 
     private int verticalScrollOffset; //上下滑动的距离
-    private int totalHeight;//recyclerview总高度
+    private float totalHeight;//recyclerview总高度
 
-    private int itemSpace;//文字间隔距离
+    private float itemSpace;//文字间隔距离
 
     @Override
     public RecyclerView.LayoutParams generateDefaultLayoutParams() {
@@ -45,7 +46,7 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
         //在布局之前，将所有的子View先Detach掉，放入到Scrap缓存中
         detachAndScrapAttachedViews(recycler);
 
-        int offsetY = 0;
+        float offsetY = getPaddingTop();
         verticalScrollOffset = 0;
         totalHeight = 0;
         for(int i = 0; i < getItemCount(); i ++){
@@ -55,23 +56,26 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
             int width = getDecoratedMeasuredWidth(view);
             int height = getDecoratedMeasuredHeight(view);//文字高度
 
-            Log.e("RECT", "layout: "+ i);
-            Rect rect = allItemFrames.get(i);
+            RectF rect = allItemFrames.get(i);
             if(rect == null){
-                rect = new Rect();
+                rect = new RectF();
             }
-            rect.set(0, offsetY, width, offsetY + height);
+            rect.set(getPaddingLeft(), offsetY, width, offsetY + height);
             allItemFrames.put(i, rect);
 
             hasAttachedItems.put(i, false);
 
-            layoutDecorated(view, 0, offsetY, width, offsetY + height);
-
-            totalHeight += height + getHeight() / 2 - height * 3 / 2;
-
-            itemSpace = getHeight() / 2 - height / 2;
+            itemSpace = (float)((getHeight() - getPaddingBottom() - getPaddingTop()) - height * 3) / 2;
+            Log.e("onLayoutChildren", "itemSpace:"+itemSpace);
             //控制居中
-            offsetY += itemSpace;
+            if(i == getItemCount() -1){
+                totalHeight += height;
+            }else {
+                totalHeight += height + itemSpace;
+            }
+
+
+            offsetY += height + itemSpace;
         }
 
         totalHeight = Math.max(totalHeight, getVerticalSpace());
@@ -83,36 +87,50 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
         if(state.isPreLayout()){
             return;
         }
-        Rect displayRect = new Rect(0, verticalScrollOffset, getHorizontalSpace(), verticalScrollOffset + getVerticalSpace());
-        Rect childFrame = new Rect();
-        Log.e("RECT", "getChildCount: "+ getChildCount());
+        RectF displayRect = new RectF(0, verticalScrollOffset, getHorizontalSpace(), verticalScrollOffset + getVerticalSpace());
+        RectF childFrame = new RectF();
         for(int i=0;i < getChildCount();i ++){
             View view = getChildAt(i);
             childFrame.set(view.getLeft(), view.getTop(), view.getRight(), view.getBottom());
             //完全滑出屏幕
-            if(!Rect.intersects(displayRect, childFrame)){
+            if(!RectF.intersects(displayRect, childFrame)){
                 removeAndRecycleAllViews(recycler);
             }
         }
 
-        int centerY = getHeight() / 2;
-
         for(int i=0;i < getItemCount();i ++){
-            if(Rect.intersects(displayRect, allItemFrames.get(i))){
-                Rect frame = allItemFrames.get(i);
+            if(RectF.intersects(displayRect, allItemFrames.get(i))){
+                RectF frame = allItemFrames.get(i);
                 TextView scrap = (TextView) recycler.getViewForPosition(i);
                 measureChildWithMargins(scrap, 0, 0);
 
-                centerY -= (frame.bottom - frame.top) / 2;//文字中间的坐标
-                int centerDx = Math.abs(frame.top - verticalScrollOffset - centerY);//距离中间的距离
-                float textSize = 15 + 3 * (float)(itemSpace - centerDx) / itemSpace;
+                int height = getDecoratedMeasuredHeight(scrap);
+
+                float dx = Math.abs(frame.bottom - verticalScrollOffset - (float)height/2 - getHeight() / 2);
+                Log.e("recycleAndFillItems", "dx:"+dx);
+                float textDt = 3 * (itemSpace + height/2 - dx) / (itemSpace + height/2);
+//                if(textDt > 3 ){
+//                    textDt = 3;
+//                }else if(textDt < -12){
+//                    textDt = -12;
+//                }
+                float textSize = 15 + textDt;
                 scrap.setTextSize(textSize);
 
+
+                if(dx < height){
+                    scrap.setTextColor(Color.RED);
+                }else {
+                    scrap.setTextColor(Color.BLACK);
+                }
+
+
+                Log.e("recycleAndFillItems", "textSize:"+textSize);
                 addView(scrap);
 
                 //将这个item布局出来
-                layoutDecorated(scrap, frame.left, frame.top - verticalScrollOffset,
-                        frame.right, frame.bottom - verticalScrollOffset);
+                layoutDecorated(scrap, (int)frame.left, (int)frame.top - verticalScrollOffset,
+                        (int)frame.right, (int)frame.bottom - verticalScrollOffset);
             }
         }
 
@@ -131,11 +149,10 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
 
         int travel = dy;
 
-        Log.e("LayoutMananger", "verticalScrollOffset:"+ verticalScrollOffset);
         if(verticalScrollOffset + dy < 0){
-            travel = -verticalScrollOffset;
+            travel = 0;
         }else if(verticalScrollOffset + dy > totalHeight - getVerticalSpace()){
-            travel = totalHeight - getVerticalSpace() - verticalScrollOffset;
+            travel = 0;
         }
 
         verticalScrollOffset += travel;

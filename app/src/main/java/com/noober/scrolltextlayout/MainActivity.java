@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 //        recyclerView.setLayoutManager(new ScaleLayoutManager.Builder(this, 10).setOrientation(1).build());
         recyclerView.setLayoutManager(new MyLayoutManager());
         list = new ArrayList<>();
-        list.add("");
+//        list.add("");
         list.add("1八卦神算子 今日收益 +99.99%");
         list.add("2八卦神算子 今日收益 +99.99%");
         list.add("3八卦神算子 今日收益 +99.99%");
