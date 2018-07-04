@@ -65,6 +65,7 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
 
             hasAttachedItems.put(i, false);
 
+            //计算每个item下边与下一个item的上边之前距离，使其一个页面只显示3个
             itemSpace = (float)((getHeight() - getPaddingBottom() - getPaddingTop()) - height * 3) / 2;
             Log.e("onLayoutChildren", "itemSpace:"+itemSpace);
             //控制居中

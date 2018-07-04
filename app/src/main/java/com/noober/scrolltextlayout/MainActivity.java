@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.rv);
 //        recyclerView.setLayoutManager(new ScaleLayoutManager.Builder(this, 10).setOrientation(1).build());
-        recyclerView.setLayoutManager(new MyLayoutManager());
+        recyclerView.setLayoutManager(new MyLayoutManagerWithKolin());
         list = new ArrayList<>();
 //        list.add("");
         list.add("1八卦神算子 今日收益 +99.99%");
