@@ -23,25 +23,19 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
     //记录Item是否出现过屏幕且还没有回收。true表示出现过屏幕上，并且还没被回收
     private SparseBooleanArray hasAttachedItems = new SparseBooleanArray();
 
-    int verticalScrollOffset;
-    int totalHeight;
+    private int verticalScrollOffset; //上下滑动的距离
+    private int totalHeight;//recyclerview总高度
 
-
-    public MyLayoutManager(){
-//        mVerticalBoundCheck = new ViewBoundsCheck(this.mVerticalBoundCheckCallback);
-    }
+    private int itemSpace;//文字间隔距离
 
     @Override
     public RecyclerView.LayoutParams generateDefaultLayoutParams() {
-        Log.e("MyLayoutManager", "generateDefaultLayoutParams");
         return new RecyclerView.LayoutParams(RecyclerView.LayoutParams.WRAP_CONTENT,
                 RecyclerView.LayoutParams.WRAP_CONTENT);
     }
 
     @Override
     public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
-
-        Log.e("MyLayoutManager", "onLayoutChildren");
         //如果没有item，直接返回
         if (getItemCount() <= 0) return;
         // 跳过preLayout，preLayout主要用于支持动画
@@ -59,7 +53,7 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
             addView(view);
             measureChildWithMargins(view, 0, 0);
             int width = getDecoratedMeasuredWidth(view);
-            int height = getDecoratedMeasuredHeight(view);
+            int height = getDecoratedMeasuredHeight(view);//文字高度
 
             Log.e("RECT", "layout: "+ i);
             Rect rect = allItemFrames.get(i);
@@ -75,15 +69,17 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
 
             totalHeight += height + getHeight() / 2 - height * 3 / 2;
 
-            offsetY += getHeight() / 2 - height / 2;
+            itemSpace = getHeight() / 2 - height / 2;
+            //控制居中
+            offsetY += itemSpace;
         }
 
         totalHeight = Math.max(totalHeight, getVerticalSpace());
 
-        recycleAndFillItems(recycler, state, 0);
+        recycleAndFillItems(recycler, state);
     }
 
-    private void recycleAndFillItems(RecyclerView.Recycler recycler, RecyclerView.State state, int dy) {
+    private void recycleAndFillItems(RecyclerView.Recycler recycler, RecyclerView.State state) {
         if(state.isPreLayout()){
             return;
         }
@@ -98,42 +94,25 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
                 removeAndRecycleAllViews(recycler);
             }
         }
-        int start = -1;
-        boolean isCenter = false;
 
         int centerY = getHeight() / 2;
 
-        for(int i=0;i<getItemCount();i ++){
-            Log.e("TTTTT", "recycleAndFillItems: "+ i);
+        for(int i=0;i < getItemCount();i ++){
             if(Rect.intersects(displayRect, allItemFrames.get(i))){
-                Log.e("TTTTT", "in: "+ i);
                 Rect frame = allItemFrames.get(i);
                 TextView scrap = (TextView) recycler.getViewForPosition(i);
                 measureChildWithMargins(scrap, 0, 0);
 
-                if(isCenter){
-                    Log.e("TEXT2222", Math.abs((frame.top - verticalScrollOffset) - centerY) + "");
+                centerY -= (frame.bottom - frame.top) / 2;//文字中间的坐标
+                int centerDx = Math.abs(frame.top - verticalScrollOffset - centerY);//距离中间的距离
+                float textSize = 15 + 3 * (float)(itemSpace - centerDx) / itemSpace;
+                scrap.setTextSize(textSize);
 
-                    scrap.setTextSize(18);
-                }else {
-                    scrap.setTextSize(15);
-                }
-
-                if(start < 0){
-                    isCenter = true;
-
-                }else {
-                    isCenter = false;
-
-                }
-                start = i;
                 addView(scrap);
 
                 //将这个item布局出来
                 layoutDecorated(scrap, frame.left, frame.top - verticalScrollOffset,
                         frame.right, frame.bottom - verticalScrollOffset);
-            }else {
-                Log.e("TTTTT", "out: "+ i);
             }
         }
 
@@ -161,9 +140,11 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
 
         verticalScrollOffset += travel;
 
+        recycleAndFillItems(recycler, state);
+
         offsetChildrenVertical(-travel);
 
-        recycleAndFillItems(recycler, state, travel);
+
         return travel;
     }
 
@@ -227,26 +208,4 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
         }
     }
 
-//    public int findFirstVisibleItemPosition() {
-//        View child = this.findOneVisibleChild(0, this.getChildCount(), false, true);
-//        return child == null ? -1 : this.getPosition(child);
-//    }
-
-//    View findOneVisibleChild(int fromIndex, int toIndex, boolean completelyVisible, boolean acceptPartiallyVisible) {
-////        this.ensureLayoutState();
-//        int preferredBoundsFlag = false;
-//        int acceptableBoundsFlag = 0;
-//        short preferredBoundsFlag;
-//        if (completelyVisible) {
-//            preferredBoundsFlag = 24579;
-//        } else {
-//            preferredBoundsFlag = 320;
-//        }
-//
-//        if (acceptPartiallyVisible) {
-//            acceptableBoundsFlag = 320;
-//        }
-//
-//        return this.mOrientation == 0 ? this.mHorizontalBoundCheck.findOneViewWithinBoundFlags(fromIndex, toIndex, preferredBoundsFlag, acceptableBoundsFlag) : this.mVerticalBoundCheck.findOneViewWithinBoundFlags(fromIndex, toIndex, preferredBoundsFlag, acceptableBoundsFlag);
-//    }
 }

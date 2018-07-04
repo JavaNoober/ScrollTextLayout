@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
 //        recyclerView.setLayoutManager(new ScaleLayoutManager.Builder(this, 10).setOrientation(1).build());
         recyclerView.setLayoutManager(new MyLayoutManager());
         list = new ArrayList<>();
+        list.add("");
         list.add("1八卦神算子 今日收益 +99.99%");
         list.add("2八卦神算子 今日收益 +99.99%");
         list.add("3八卦神算子 今日收益 +99.99%");
@@ -75,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         handler = new Handler();
-//        handler.postDelayed(runnable, 3000);
+        handler.postDelayed(runnable, 3000);
 
 
 
@@ -87,9 +88,14 @@ public class MainActivity extends AppCompatActivity {
             if(i < list.size()){
                 Log.e("MainActivity", i+"");
                 recyclerView.smoothScrollToPosition(++ i);
-                handler.postDelayed(runnable, 1000);
+                if(i == list.size() - 1){
+                    handler.post(runnable);
+                }else {
+                    handler.postDelayed(runnable, 1000);
+                }
+
             }else {
-                i = 1;
+                i = 0;
                 adapter.notifyDataSetChanged();
                 handler.postDelayed(runnable, 1000);
             }
