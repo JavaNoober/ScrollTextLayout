@@ -45,7 +45,7 @@ class MyLayoutManagerWithKolin : RecyclerView.LayoutManager(), RecyclerView.Smoo
             val view = recycler.getViewForPosition(i)
             addView(view)
             measureChildWithMargins(view, 0, 0)
-            val width = getDecoratedMeasuredWidth(view)
+            val width = width
             val height = getDecoratedMeasuredHeight(view)
 
             var rect = allItemFrames.get(i)

@@ -53,7 +53,7 @@ public class MyLayoutManager extends RecyclerView.LayoutManager implements Recyc
             View view = recycler.getViewForPosition(i);
             addView(view);
             measureChildWithMargins(view, 0, 0);
-            int width = getDecoratedMeasuredWidth(view);
+            int width = getWidth();
             int height = getDecoratedMeasuredHeight(view);//文字高度
 
             RectF rect = allItemFrames.get(i);
